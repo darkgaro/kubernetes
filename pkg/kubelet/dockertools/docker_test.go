@@ -166,13 +166,19 @@ func TestDockerContainerCommand(t *testing.T) {
 	runner := dockerContainerCommandRunner{}
 	containerID := "1234"
 	command := []string{"ls"}
-	cmd, _ := runner.getRunInContainerCommand(containerID, command)
-	if cmd.Dir != "/var/lib/docker/execdriver/native/"+containerID {
-		t.Errorf("unexpected command CWD: %s", cmd.Dir)
+	cmd, err := runner.getRunInContainerCommand(containerID, command)
+
+	if err != nil || cmd == nil {
+		t.Errorf("error processing getRunInContainerCommand method: %#v", err)
+	} else {
+		if cmd.Dir != "/var/lib/docker/execdriver/native/"+containerID {
+			t.Errorf("unexpected command CWD: %s", cmd.Dir)
+		}
+		if !reflect.DeepEqual(cmd.Args, []string{"/usr/sbin/nsinit", "exec", "ls"}) {
+			t.Errorf("unexpectd command args: %s", cmd.Args)
+		}
 	}
-	if !reflect.DeepEqual(cmd.Args, []string{"/usr/sbin/nsinit", "exec", "ls"}) {
-		t.Errorf("unexpectd command args: %s", cmd.Args)
-	}
+
 }
 
 var parseImageNameTests = []struct {
