@@ -23,6 +23,7 @@ import (
 	"io"
 	"math/rand"
 	"os/exec"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -102,9 +103,31 @@ type dockerContainerCommandRunner struct{}
 
 func (d *dockerContainerCommandRunner) getRunInContainerCommand(containerID string, cmd []string) (*exec.Cmd, error) {
 	args := append([]string{"exec"}, cmd...)
-	command := exec.Command("/usr/sbin/nsinit", args...)
-	command.Dir = fmt.Sprintf("/var/lib/docker/execdriver/native/%s", containerID)
-	return command, nil
+
+	// temporary fix for those systems (CoreOS) that can't or don't have nsinit installed at default location 
+	// following checks multiple locations for nsinit
+	nsinitPath  := []string{"/usr/sbin/nsinit","/opt/bin/nsinit"}
+	var err error
+
+	for _, path := range nsinitPath {
+
+		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
+			//fmt.Printf("no such file or directory: %s", path)
+			err = statErr
+		    continue
+		} 
+
+		command := exec.Command(path, args...)
+		command.Dir = fmt.Sprintf("/var/lib/docker/execdriver/native/%s", containerID)
+		return command, nil
+
+    }
+
+
+    glog.Errorf("We tried to locate nsinit at multiple locations and we couldn't find it at either of these paths: %s", strings.Join(nsinitPath, ", "))
+    return nil, err
+
+
 }
 
 // RunInContainer uses nsinit to run the command inside the container identified by containerID
