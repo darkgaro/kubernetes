@@ -573,17 +573,70 @@ func TestValidatePodUpdate(t *testing.T) {
 			false,
 			"port change",
 		},
+		{
+			api.Pod{
+				TypeMeta: api.TypeMeta{ID: "fooimagechange"},
+				DesiredState: api.PodState{
+					Manifest: api.ContainerManifest{
+						Containers: []api.Container{
+							{
+								Image: "registry.foo.domain/user/dev:v0.1.302",
+								Ports: []api.Port{
+									{HostPort: 8080, ContainerPort: 80},
+								},
+								VolumeMounts: []api.VolumeMount{
+									{Name: "data", MountPath:"/data"},
+								},
+        						ImagePullPolicy: "PullIfNotPresent",
+						        Lifecycle : &api.Lifecycle{
+						          PostStart : &api.Handler{
+						            Exec : &api.ExecAction {Command : []string{"/opt/conf/poststart.sh"}},
+						          },
+						        },
+
+							},
+						},
+					},
+				},
+			},
+			api.Pod{
+				TypeMeta: api.TypeMeta{ID: "fooimagechange"},
+				DesiredState: api.PodState{
+					Manifest: api.ContainerManifest{
+						Containers: []api.Container{
+							{
+								Image: "registry.foo.domain/user/dev:v0.1.301",
+								Ports: []api.Port{
+									{HostPort: 8000, ContainerPort: 80},
+								},
+								VolumeMounts: []api.VolumeMount{
+									{Name: "data", MountPath:"/data"},
+								},
+        						ImagePullPolicy: "PullIfNotPresent",
+						        Lifecycle : &api.Lifecycle{
+						          PostStart : &api.Handler{
+						            Exec : &api.ExecAction {Command : []string{"/opt/conf/poststart.sh"}},
+						          },
+						        },
+							},
+						},
+					},
+				},
+			},
+			true,
+			"image change",
+		},
 	}
 
 	for _, test := range tests {
 		errs := ValidatePodUpdate(&test.a, &test.b)
 		if test.isValid {
 			if len(errs) != 0 {
-				t.Errorf("unexpected invalid: %s %v, %v", test.test, test.a, test.b)
+				t.Errorf("unexpected invalid: %s %v, %v : %v", test.test, test.a, test.b, errs)
 			}
 		} else {
 			if len(errs) == 0 {
-				t.Errorf("unexpected valid: %s %v, %v", test.test, test.a, test.b)
+				t.Errorf("unexpected valid: %s %v, %v : %v", test.test, test.a, test.b, errs)
 			}
 		}
 	}
