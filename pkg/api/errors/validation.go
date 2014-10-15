@@ -106,7 +106,7 @@ func NewFieldNotSupported(field string, value interface{}) ValidationError {
 
 // NewFieldForbidden returns a ValidationError indicating "forbidden"
 func NewFieldForbidden(field string, value interface{}) ValidationError {
-	return ValidationError{ValidationErrorTypeForbidden, field, value}
+	return ValidationError{ValidationErrorTypeForbidden, field, value,""}
 }
 
 // NewFieldDuplicate returns a ValidationError indicating "duplicate value"
