@@ -19,6 +19,8 @@ package validation
 import (
 	"reflect"
 	"strings"
+	"fmt"
+	//"encoding/json"
 
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/api"
 	errs "github.com/GoogleCloudPlatform/kubernetes/pkg/api/errors"
@@ -345,13 +347,16 @@ func ValidatePod(pod *api.Pod) errs.ErrorList {
 // ValidatePodUpdate tests to see if the update is legal
 func ValidatePodUpdate(newPod, oldPod *api.Pod) errs.ErrorList {
 	allErrs := errs.ErrorList{}
+	newpodCount := len(newPod.DesiredState.Manifest.Containers)
+	oldpodCount := len(oldPod.DesiredState.Manifest.Containers)
 
 	if newPod.ID != oldPod.ID {
 		allErrs = append(allErrs, errs.NewFieldInvalid("ID", newPod.ID))
 	}
 
-	if len(newPod.DesiredState.Manifest.Containers) != len(oldPod.DesiredState.Manifest.Containers) {
-		allErrs = append(allErrs, errs.NewFieldInvalid("DesiredState.Manifest.Containers", newPod.DesiredState.Manifest.Containers))
+	if newpodCount != oldpodCount  {
+		allErrs = append(allErrs, errs.NewFieldInvalidMessage("DesiredState.Manifest.Containers", newPod.DesiredState.Manifest.Containers, fmt.Sprintf("Two pods do not have equal number of containers new pod has %v items and old has %v items", newpodCount, oldpodCount )))
+
 		return allErrs
 	}
 	pod := *newPod
@@ -364,8 +369,9 @@ func ValidatePodUpdate(newPod, oldPod *api.Pod) errs.ErrorList {
 		newContainers = append(newContainers, container)
 	}
 	pod.DesiredState.Manifest.Containers = newContainers
+
 	if !reflect.DeepEqual(pod.DesiredState.Manifest, oldPod.DesiredState.Manifest) {
-		allErrs = append(allErrs, errs.NewFieldInvalid("DesiredState.Manifest.Containers", newPod.DesiredState.Manifest.Containers))
+		allErrs = append(allErrs, errs.NewFieldInvalidMessage("DesiredState.Manifest.Containers", newPod.DesiredState.Manifest.Containers, fmt.Sprintf("Two pods manifests are not equal, \nnew pod :\n %+v \n, \nold pod :\n %+v ", pod.DesiredState.Manifest, oldPod.DesiredState.Manifest )))
 	}
 	return allErrs
 }
