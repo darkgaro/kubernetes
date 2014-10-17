@@ -507,16 +507,25 @@ func (kl *Kubelet) syncPod(pod *api.BoundPod, dockerContainers dockertools.Docke
 			containerID := dockertools.DockerID(dockerContainer.ID)
 			glog.V(3).Infof("pod %s container %s exists as %v", podFullName, container.Name, containerID)
 
+			glog.V(3).Infof("Comparing pod hashes, hash: %s  == expected hash: %s ", hash, expectedHash)
+			glog.V(3).Infof("Comparing pods , \n pod:\n %+v  \nexpected pod:\n %+v ", dockerContainer, &container)
+
 			// look for changes in the container.
 			if hash == 0 || hash == expectedHash {
 				// TODO: This should probably be separated out into a separate goroutine.
 				healthy, err := kl.healthy(podFullName, uuid, podState, container, dockerContainer)
+
+				glog.V(3).Infof("same hash found for container: %s", container.Name)
+
 				if err != nil {
 					glog.V(1).Infof("health check errored: %v", err)
 					containersToKeep[containerID] = empty{}
 					continue
 				}
 				if healthy == health.Healthy {
+
+					glog.V(3).Infof("container: %s is healthy", container.Name)
+
 					containersToKeep[containerID] = empty{}
 					continue
 				}
@@ -726,8 +735,10 @@ func (kl *Kubelet) syncLoop(updates <-chan PodUpdate, handler SyncHandler) {
 
 			case UPDATE:
 				//TODO: implement updates of containers
-				glog.Warningf("Containers updated, not implemented [%s]", kl.hostname)
-				continue
+				kl.pods = u.Pods
+				kl.pods = filterHostPortConflicts(kl.pods)
+				glog.V(3).Infof("Containers updated, Trying to sync containers [%s]", kl.hostname)
+				//continue
 
 			default:
 				panic("syncLoop does not support incremental changes")
