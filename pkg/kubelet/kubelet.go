@@ -729,16 +729,6 @@ func (kl *Kubelet) syncLoop(updates <-chan PodUpdate, handler SyncHandler) {
 				kl.pods = u.Pods
 				kl.pods = filterHostPortConflicts(kl.pods)
 
-<<<<<<< HEAD
-=======
-			case UPDATE:
-				//TODO: implement updates of containers
-				kl.pods = u.Pods
-				kl.pods = filterHostPortConflicts(kl.pods)
-				glog.V(3).Infof("Containers updated, Trying to sync containers [%s]", kl.hostname)
-				//continue
-
->>>>>>> fix for containers not restarting when there is a pod update
 			default:
 				panic("syncLoop does not support incremental changes")
 			}
